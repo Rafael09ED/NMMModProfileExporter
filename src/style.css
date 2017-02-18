@@ -1,0 +1,24 @@
+.profileList {
+    -fx-padding: 1;
+    -fx-spacing: 8;
+}
+
+.profileListItem {
+    -fx-background-color: rgba(0, 0, 0, 0.06);
+    -fx-padding: 1;
+}
+
+.profileListItem:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.2);
+}
+
+.profileListItem:pressed {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+}
+
+.profileTitle {
+    -fx-font-weight: bold;
+}
+.text-area {
+    -fx-font-family: monospace;
+}
