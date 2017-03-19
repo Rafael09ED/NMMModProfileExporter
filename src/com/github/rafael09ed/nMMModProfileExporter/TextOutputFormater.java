@@ -29,7 +29,7 @@ public class TextOutputFormater {
                     "Mod Version:         " + MOD_VERSION + "\n\n",
             MARKDOWN_VALUE = "[" + MOD_NAME_SIMPLE + "](" + MOD_NEXUS_LINK + ")\n\n";
 
-    public static String makeTextOutput(String layout, ModProfile profile) {
+    public static String makeTextOutput(String layout, ModProfile profile, PreferencesIO preferences) {
         //StringBuilder output = new StringBuilder();
         List<String> list = splitAroundRegex(layout, REGEX);
         return profile.getMods().parallelStream().map(mod -> {
@@ -50,7 +50,9 @@ public class TextOutputFormater {
                             output.append(mod.getModId());
                             break;
                         case MOD_NEXUS_LINK:
-                            output.append(mod.getModURL(profile.getGameName().replaceAll("\\s+", "")));
+                            String gameName = profile.getGameName().replaceAll("\\s+", "");
+                            String gameURL = preferences.getUrlFromGamePath(gameName);
+                            output.append(mod.getModURL((gameURL != null) ? gameURL : gameName));
                             break;
                         case MOD_VERSION:
                             output.append(mod.getModVersion());

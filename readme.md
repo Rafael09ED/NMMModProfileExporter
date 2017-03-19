@@ -45,3 +45,7 @@ These outputs will be generated for each mod in the profile's mod list. The use 
 ----
 
 Download: https://github.com/Rafael09ED/NMMModProfileExporter/releases
+
+### Version History
+**1.0 - Initial Release**
+**1.1 - Custom Nexus URL Sub Paths for games**

@@ -1,28 +1,35 @@
 package com.github.rafael09ed.nMMModProfileExporter;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.Side;
 import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.control.Button;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
- * EGR 283 B01
- * UserInterface.java
- * Purpose:
- *
  * @author Rafael
  * @version 1.0 2/16/2017
  */
@@ -33,6 +40,7 @@ public class UserInterface extends Application {
     private final Button autoFindButton = new Button("Auto"), demoButton = new Button("Demo"),
             markdownButton = new Button("Markdown"), copyButton = new Button("Copy Mod List");
     private ModProfile activeModProfile;
+    private final PreferencesIO preferences = new PreferencesIO();
 
     public static void main(String[] args) {
         launch(args);
@@ -94,7 +102,8 @@ public class UserInterface extends Application {
         primaryStage.setScene(new Scene(main, 900, 800));
         primaryStage.getScene().getStylesheets().add("style.css");
 
-        primaryStage.setTitle("Nexus Mod Manager Mod Profile Extractor");
+        primaryStage.setTitle("Nexus Mod Manager Mod Profile Extractor By Rafael09ED");
+        primaryStage.setOnCloseRequest(event -> preferences.saveToFile());
         primaryStage.show();
     }
 
@@ -106,7 +115,8 @@ public class UserInterface extends Application {
         modListArea.setText(TextOutputFormater
                 .makeTextOutput(
                         layoutArea.getText(),
-                        activeModProfile
+                        activeModProfile,
+                        preferences
                 ));
     }
 
@@ -115,11 +125,66 @@ public class UserInterface extends Application {
         if (profiles.size() > 0)
             activeModProfile = profiles.get(0);
         for (ModProfile profile : profiles) {
-            VBox vBox = new VBox();
-            vBox.setOnMouseClicked(event -> {
-                activeModProfile = profile;
-                updateList();
+            VBox modProfileVBox = new VBox();
+            modProfileVBox.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY) {
+                    activeModProfile = profile;
+                    updateList();
+                } else {
+                    ContextMenu modProfileContextMenu = new ContextMenu();
+                    MenuItem modProfileMenuItem = new MenuItem("Set URL Subpath for Game");
+                    modProfileMenuItem.setOnAction(e -> {
+                        Dialog<Pair<String, String>> dialog = new Dialog<>();
+                        dialog.setTitle("Set URL Subpath for Game");
+                        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.APPLY, ButtonType.CANCEL);
+
+                        GridPane grid = new GridPane();
+
+                        TextField gameField = new TextField();
+                        gameField.setPromptText("Game Path");
+                        gameField.setText(profile.getGameName().toLowerCase());
+                        TextField urlField = new TextField();
+                        urlField.setPromptText("Nexus Mod URL SubPath");
+                        grid.add(new Label("Game Path:"), 0, 0);
+                        grid.add(gameField, 0, 1);
+                        grid.add(new Label("URL Path:"), 1, 0);
+                        grid.add(urlField, 1, 1);
+
+                        dialog.getDialogPane().setContent(grid);
+                        Platform.runLater(urlField::requestFocus);
+                        dialog.setResultConverter(dialogButton -> {
+                            if (dialogButton == ButtonType.APPLY) {
+                                return new Pair<>(gameField.getText(), urlField.getText());
+                            }
+                            return null;
+                        });
+
+                        Optional<Pair<String, String>> result = dialog.showAndWait();
+                        result.ifPresent(values -> {
+                            preferences.setUrlForGamePath(values.getKey(), values.getValue());
+                            updateList();
+                        });
+                    });
+                    modProfileContextMenu.getItems().add(modProfileMenuItem);
+
+                    modProfileMenuItem = new MenuItem("Open Profile Path");
+                    modProfileMenuItem.setOnAction(e -> {
+                        try {
+                            Desktop.getDesktop().open(new File(profile.getProfilePath()));
+                        } catch (IOException e1) {
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("Error");
+                            alert.setHeaderText(null);
+                            alert.setContentText("Could Not Open Path");
+                            alert.show();
+                        }
+                    });
+                    modProfileContextMenu.getItems().add(modProfileMenuItem);
+
+                    modProfileContextMenu.show(modProfileVBox, Side.BOTTOM, 0, 0);
+                }
             });
+
             Label label;
 
             String profileName = profile.getProfileName();
@@ -127,20 +192,20 @@ public class UserInterface extends Application {
                 profileName = "Untitled Profile";
             label = new Label(profileName);
             label.getStyleClass().add("profileTitle");
-            vBox.getChildren().add(label);
+            modProfileVBox.getChildren().add(label);
 
             label = new Label(profile.getGameName());
-            vBox.getChildren().add(label);
+            modProfileVBox.getChildren().add(label);
 
             label = new Label(profile.getProfilePath());
-            vBox.getChildren().add(label);
+            modProfileVBox.getChildren().add(label);
 
             label = new Label(profile.getMods().size() + " Mods");
-            vBox.getChildren().add(label);
+            modProfileVBox.getChildren().add(label);
 
-            vBox.getStyleClass().add("profileListItem");
-            vBox.setMaxWidth(Double.MAX_VALUE);
-            modProfilesList.getChildren().add(vBox);
+            modProfileVBox.getStyleClass().add("profileListItem");
+            modProfileVBox.setMaxWidth(Double.MAX_VALUE);
+            modProfilesList.getChildren().add(modProfileVBox);
         }
         updateList();
     }
